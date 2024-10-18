@@ -1,0 +1,113 @@
+#include <Servo.h>
+#include <LiquidCrystal.h>
+
+
+const int buttonPin = 2;
+const int ledPin = 13;
+const int servoPin = 6;
+
+
+Servo myServo;
+
+
+LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
+
+
+int buttonState = 0;
+int lastButtonState = 0;
+unsigned long lastDebounceTime = 0;
+unsigned long debounceDelay = 50;
+int buttonCounter = 0;
+unsigned long lastButtonClickTime = 0;
+unsigned long doubleClickDelay = 400;
+
+
+void singleClickAction();
+void doubleClickAction();
+
+void setup() {
+  
+  pinMode(buttonPin, INPUT);
+  
+ 
+  pinMode(ledPin, OUTPUT);
+  
+  
+  myServo.attach(servoPin);
+  
+  
+  lcd.begin(16, 2);
+  lcd.clear();
+  lcd.print("LED Blinks: 0");
+  lcd.setCursor(0, 1);
+  lcd.print("Angle: 0");
+}
+
+void loop() {
+  int reading = digitalRead(buttonPin);
+  
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+  
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading == HIGH && buttonState == LOW) {
+      unsigned long currentTime = millis();
+      if (currentTime - lastButtonClickTime < doubleClickDelay) {
+        buttonCounter++;
+        if (buttonCounter == 2) {
+          doubleClickAction();
+          buttonCounter = 0;
+        }
+      } else {
+        buttonCounter = 1;
+      }
+      lastButtonClickTime = currentTime;
+    }
+    buttonState = reading;
+  }
+  
+  lastButtonState = reading;
+  
+  
+  if (buttonCounter == 1 && (millis() - lastButtonClickTime > doubleClickDelay)) {
+    singleClickAction();
+    buttonCounter = 0;
+  }
+}
+
+void singleClickAction() {
+  blinkLED(2);
+  rotateServo(90);
+  updateLCD(2, 90);
+}
+
+void doubleClickAction() {
+  blinkLED(4);
+  rotateServo(180);
+  updateLCD(4, 180);
+}
+
+void blinkLED(int times) {
+  for (int i = 0; i < times; i++) {
+    digitalWrite(ledPin, HIGH);
+    delay(25);
+    digitalWrite(ledPin, LOW);
+    delay(25);
+  }
+}
+
+void rotateServo(int angle) {
+  myServo.write(angle);
+  delay(30); 
+}
+
+void updateLCD(int blinkCount, int angle) {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("LED Blinks: ");
+  lcd.print(blinkCount);
+  lcd.setCursor(0, 1);
+  lcd.print("Angle: ");
+  lcd.print(angle);
+}
